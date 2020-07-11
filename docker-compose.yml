@@ -1,0 +1,17 @@
+version: '2.0'
+services:
+  app:
+    build: .
+    ports:
+    - "5000:5000"
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: 'postgresql://postgres:mysecretpassword@postgres/template1'
+      SECRET_KEY: "another_bad_secret"
+  postgres:
+    ports:
+      - 5432:5432  # Not needed but handy for running app outside docker with the postgres db
+    image: postgres
+    environment:
+      POSTGRES_PASSWORD: "mysecretpassword"
