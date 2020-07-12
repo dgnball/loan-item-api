@@ -3,6 +3,8 @@ import os
 import traceback
 
 import jwt
+import phonenumbers
+from phonenumbers.phonenumberutil import NumberParseException
 from flask import Flask, request, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -31,19 +33,17 @@ def check_token_and_set_session(user_manage):
     data = jwt.decode(token, app.config["SECRET_KEY"])
     user_manage.set_user_session(data["username"])
 
-# TODO - add a license
 
-# TODO - ensure a user can only change one thing at a time
-
-#  Create user
-# TODO - check phone number is valid
 def register(user_manager):
+    """Create user."""
     request_data = request.get_json()
     if (
         "username" not in request_data
         or "password" not in request_data
         or "phone" not in request_data
     ):
+        raise InvalidRequestException
+    if not phonenumbers.is_valid_number(phonenumbers.parse(request_data["phone"], None)):
         raise InvalidRequestException
     hashed_password = generate_password_hash(request_data["password"])
     user_manager.create(
@@ -76,11 +76,15 @@ def update_user(user_manage: Users, username):
         password_hash = generate_password_hash(request.json["password"])
         user_manage.update_password(username, password_hash)
     elif "phone" in request.json:
+        if not phonenumbers.is_valid_number(phonenumbers.parse(request.json["phone"], None)):
+            raise InvalidRequestException
         user_dict = user_manage.update_phone(
             username, request.json["phone"]
         )
         return jsonify({"user": user_dict})
     elif "role" in request.json:
+        if request.json["role"] not in ["admin", "regular"]:
+            raise InvalidRequestException
         user_dict = user_manage.update_role(username, request.json["role"])
         return jsonify({"user": user_dict})
     else:
@@ -137,7 +141,7 @@ def eval_and_respond(user_manage, funcs):
         return jsonify({"error": "Not authorized."}), 403
     except UserAlreadyExistsException:
         return jsonify({"error": "User already exists."}), 400
-    except InvalidRequestException:
+    except (InvalidRequestException, NumberParseException):
         return jsonify({"error": "Invalid request."}), 400
     except UnknownUserException:
         return jsonify({"error": "User not found."}), 404
@@ -212,7 +216,7 @@ def loan_item(item_id):
     return response
 
 
-create_admin_user()  # TODO - Fix bug where the admin user gets over-ridden
+create_admin_user()
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

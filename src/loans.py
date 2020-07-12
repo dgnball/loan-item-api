@@ -48,7 +48,7 @@ class Loans:
             else:
                 entries = self._storage.get_by_limit_and_offset(request_args["limit"], 0)
         elif "offset" in request_args:
-            entries = self._storage.get_by_limit_and_offset(0, request_args["offset"])
+            entries = self._storage.get_by_limit_and_offset(None, request_args["offset"])
         else:
             entries = self._storage.get_all()
         ret_val = []
@@ -83,5 +83,7 @@ class _Storage:
         return self._db_session.query(LoanItem).filter(LoanItem.loaned_to == username)
 
     def get_by_limit_and_offset(self, limit, offset):
-        return self._db_session.query(LoanItem).limit(limit).offset(offset)
-
+        if limit:
+            return self._db_session.query(LoanItem).limit(limit).offset(offset)
+        else:
+            return self._db_session.query(LoanItem).offset(offset)

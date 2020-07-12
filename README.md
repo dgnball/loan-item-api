@@ -2,9 +2,9 @@
 
 ## Overview
 
-This is a REST API that can be used as a back-end for an organisation that is loaning out physical
+A REST API that can be used as a back-end for a physical item loan system. Example uses would be hiring or borrowing
 items such as sports equipment, power tools or books. It can be used with any UI that has a REST client. A typical
-example UI, would be mobile phone app. In this example, the app could be scanning QR stickers affixed to loanable items
+example UI, would be mobile phone app. In this scenario, the app could be scanning QR stickers affixed to loanable items
 to make the job of looking up and loaning items quick and convenient. A different scenario would be a web-based
 kiosk where users are able to login and interact with their own-list of loaned items.
 

@@ -50,7 +50,6 @@ class Users:
                 phone="+441234567890",
             )
             self._storage.create(user)
-            return user
 
     def create(self, username, hashed_password, phone):
         user_orm = self._storage.get(username)

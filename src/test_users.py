@@ -70,8 +70,6 @@ class TestUsers(unittest.TestCase):
         self.assertEqual(BOB, user_obj.username)
         self.assertEqual(PASSWORD_2, user_obj.hashed_password)
 
-#TODO - invalid role
-
     def test_read_regular_user(self):
         self.assertRaises(NotAllowedException, self.read, ALICE, BOB)
         self.read(ADMIN, BOB)

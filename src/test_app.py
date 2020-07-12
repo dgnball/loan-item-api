@@ -1,8 +1,6 @@
 from flask_testing import TestCase
 import app
 
-# TODO - implement and test pagination
-# TODO - check a user can set password and phone number at the same time
 
 class TestLoanItemApi(TestCase):
     def test_get_own_user(self):
@@ -28,6 +26,33 @@ class TestLoanItemApi(TestCase):
         body, code = self.post(f"/users", bob, bob_creds)
         self.assertEqual(400, code)
         self.assertEqual({"error": "Invalid request."}, body)
+
+    def test_check_invalid_user_put(self):
+        # Check we can't change the password and phone number at the same time.
+        body, code = self.put(f"/users/{bob}", bob, {"password": "password2", "phone": "+441234567891"})
+        self.assertEqual(400, code)
+        self.assertEqual({"error": "Invalid request."}, body)
+
+        # Check we can't input an invalid phone number
+        body, code = self.put(f"/users/{bob}", bob, {"phone": "+1"})
+        self.assertEqual(400, code)
+        self.assertEqual({"error": "Invalid request."}, body)
+        body, code = self.put(f"/users/{bob}", bob, {"phone": "a"})
+        self.assertEqual(400, code)
+        self.assertEqual({"error": "Invalid request."}, body)
+
+        # Check we can't set an invalid role
+        body, code = self.put(f"/users/{bob}", bob, {"role": "banana"})
+        self.assertEqual(400, code)
+        self.assertEqual({"error": "Invalid request."}, body)
+
+    def test_check_user_change_phone(self):
+        # Check we can't change the password and phone number at the same time.
+        body, _ = self.put(f"/users/{bob}", bob, {"phone": "+441234567891"})
+        expected = {"username": bob, "role": "regular", "phone": "+441234567891"}
+        self.assertEqual(expected, body["user"])
+        body, _ = self.get(f"/users/{bob}", bob)
+        self.assertEqual(expected, body["user"])
 
     def test_change_pasword(self):
         body, code = self.put(f"/users/{bob}", bob, {"password": "password2"})
@@ -95,6 +120,20 @@ class TestLoanItemApi(TestCase):
             {"id": "08", "loanedto": None, "description": "nail gun"},
             {"id": "09", "loanedto": None, "description": "impact wrench"},
             {"id": "10", "loanedto": None, "description": "air conditioner"}
+        ]
+        self.assertEqual(expected, body["loan-items"])
+
+        body, _ = self.get("/loan-items?limit=2", admin)
+        expected = [
+            {"id": "01", "loanedto": None, "description": "wheelbarrow"},
+            {"id": "02", "loanedto": None, "description": "drill"}
+        ]
+        self.assertEqual(expected, body["loan-items"])
+
+        body, _ = self.get("/loan-items?offset=09", admin)
+        expected = [
+            {"id": "10", "loanedto": None, "description": "air conditioner"},
+            {"id": "11", "loanedto": None, "description": "fan"}
         ]
         self.assertEqual(expected, body["loan-items"])
 
