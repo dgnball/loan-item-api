@@ -51,7 +51,7 @@ class TestLoanItemApi(unittest.TestCase):
     def test_change_role(self):
         # Create a loan item and check Bob can't loan it to himself
         self.post("/loan-items", admin, self.make_loan_item("1", "wheelbarrow"))
-        body, code = self.put(f"/loan-items/1", bob, {"loaned-to": "bob"})
+        body, code = self.put(f"/loan-items/1", bob, {"loanedto": "bob"})
         self.assertEqual(403, code)
         self.assertEqual({"error": "Not authorized."}, body)
 
@@ -63,7 +63,7 @@ class TestLoanItemApi(unittest.TestCase):
         # User the admin user to make Bob an admin and check he can then loan an item to himself
         _, code = self.put(f"/users/{bob}", admin, {"role": "admin"})
         self.assertEqual(200, code)
-        _, code = self.put(f"/loan-items/1", bob, {"loaned-to": "bob"})
+        _, code = self.put(f"/loan-items/1", bob, {"loanedto": "bob"})
         self.assertEqual(200, code)
 
     def test_delete_user(self):

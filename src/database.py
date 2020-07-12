@@ -20,7 +20,7 @@ class LoanItem(Base):
     __tablename__ = "LoanItem"
     id = Column(String, primary_key=True)
     description = Column(String)
-    loaned_to = Column(String, ForeignKey("user.username"))
+    loanedto = Column(String, ForeignKey("user.username"))
 
 
 sql_connect = "sqlite:///:memory:"  # Unit test only. For some reason this fails when handling real http requests.

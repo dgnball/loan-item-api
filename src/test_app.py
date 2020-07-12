@@ -2,6 +2,7 @@ from flask_testing import TestCase
 import app
 
 # TODO - implement and test pagination
+# TODO - check a user can set password and phone number at the same time
 
 class TestLoanItemApi(TestCase):
     def test_get_own_user(self):
@@ -50,7 +51,7 @@ class TestLoanItemApi(TestCase):
     def test_change_role(self):
         # Create a loan item and check Bob can't loan it to himself
         self.post("/loan-items", admin, self.make_loan_item("1", "wheelbarrow"))
-        body, code = self.put(f"/loan-items/1", bob, {"loaned-to": "bob"})
+        body, code = self.put(f"/loan-items/1", bob, {"loanedto": "bob"})
         self.assertEqual(403, code)
         self.assertEqual({"error": "Not authorized."}, body)
 
@@ -62,7 +63,7 @@ class TestLoanItemApi(TestCase):
         # User the admin user to make Bob an admin and check he can then loan an item to himself
         _, code = self.put(f"/users/{bob}", admin, {"role": "admin"})
         self.assertEqual(200, code)
-        _, code = self.put(f"/loan-items/1", bob, {"loaned-to": "bob"})
+        _, code = self.put(f"/loan-items/1", bob, {"loanedto": "bob"})
         self.assertEqual(200, code)
 
     def test_delete_user(self):
@@ -73,6 +74,29 @@ class TestLoanItemApi(TestCase):
         body, code = self.post(f"/login", data=bob_creds)
         self.assertEqual(401, code, body.get("error", ""))
         self.assertEqual({"error": "Wrong username or password."}, body)
+
+    def test_pagination(self):
+        self.post("/loan-items", admin, {"id": "01", "description": "wheelbarrow"})
+        self.post("/loan-items", admin, {"id": "02", "description": "drill"})
+        self.post("/loan-items", admin, {"id": "03", "description": "digger"})
+        self.post("/loan-items", admin, {"id": "04", "description": "carpet cleaner"})
+        self.post("/loan-items", admin, {"id": "05", "description": "floor sander"})
+        self.post("/loan-items", admin, {"id": "06", "description": "orbital sander"})
+        self.post("/loan-items", admin, {"id": "07", "description": "pressure washer"})
+        self.post("/loan-items", admin, {"id": "08", "description": "nail gun"})
+        self.post("/loan-items", admin, {"id": "09", "description": "impact wrench"})
+        self.post("/loan-items", admin, {"id": "10", "description": "air conditioner"})
+        self.post("/loan-items", admin, {"id": "11", "description": "fan"})
+
+        body, _ = self.get("/loan-items?limit=5&offset=5", admin)
+        expected = [
+            {"id": "06", "loanedto": None, "description": "orbital sander"},
+            {"id": "07", "loanedto": None, "description": "pressure washer"},
+            {"id": "08", "loanedto": None, "description": "nail gun"},
+            {"id": "09", "loanedto": None, "description": "impact wrench"},
+            {"id": "10", "loanedto": None, "description": "air conditioner"}
+        ]
+        self.assertEqual(expected, body["loan-items"])
 
     def setUp(self) -> None:
         self.bob_token = None
@@ -88,8 +112,8 @@ class TestLoanItemApi(TestCase):
                 self.assertEqual(200, code, body.get("error", ""))
         body, code = self.get("/loan-items", admin)
         self.assertEqual(200, code, body.get("error", ""))
-        for Loan_id in body["Loans"]:
-            body, code = self.delete(f"/loan-items/{Loan_id}", admin)
+        for loan_item in body["loan-items"]:
+            body, code = self.delete(f"/loan-items/{loan_item['id']}", admin)
             self.assertEqual(200, code, body.get("error", ""))
 
         # Confirm Bob no longer exist then re-add him

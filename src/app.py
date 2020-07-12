@@ -33,6 +33,8 @@ def check_token_and_set_session(user_manage):
 
 # TODO - add a license
 
+# TODO - ensure a user can only change one thing at a time
+
 #  Create user
 # TODO - check phone number is valid
 def register(user_manager):
@@ -88,22 +90,37 @@ def update_user(user_manage: Users, username):
 
 def create_loan_item(user_manager: Users):
     loan_item_dict = user_manager.Loans.create(request.json["id"], request.json["description"])
-    return jsonify({"Loan": loan_item_dict})
+    return jsonify({"loan-item": loan_item_dict})
 
 
 def read_loan_items(user_manager: Users):
-    loan_item_dict = user_manager.Loans.read(**request.args)
-    return jsonify({"Loans": loan_item_dict})
+    loan_item_dict = user_manager.Loans.read(request.args)
+    return jsonify({"loan-items": loan_item_dict})
 
 
 def read_loan_item(user_manager: Users, id):
-    Loan_dict = user_manager.Loans.read(id)
-    return jsonify({"Loan": Loan_dict})
+    Loan_dict = user_manager.Loans.read_single_entry(id)
+    return jsonify({"loan-item": Loan_dict})
 
 
-def remove_loan_item(user_manager: Users, Loan_id):
-    user_manager.Loans.remove(Loan_id)
+def remove_loan_item(user_manager: Users, loan_item_id):
+    user_manager.Loans.remove(loan_item_id)
     return jsonify({"message": "Loan successfully deleted."})
+
+
+def login_user(user_manager):
+    json = request.get_json()
+    user_orm = user_manager.non_session_read(json["username"])
+    if not user_orm:
+        return jsonify({"error": "Wrong username or password."}), 401
+    if check_password_hash(user_orm.hashed_password, json["password"]):
+        payload = {
+            "username": json["username"],
+            "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=30),
+        }
+        token = jwt.encode(payload, app.config["SECRET_KEY"])
+        return jsonify({"auth_token": token.decode()})
+    return jsonify({"error": "Wrong username or password."}), 401
 
 
 def eval_and_respond(user_manage, funcs):
@@ -142,19 +159,8 @@ def create_admin_user():
 
 @app.route("/login", methods=["POST"])
 def login():
-    json = request.get_json()
     with UserManagement() as user_manage:
-        user_orm = user_manage.non_session_read(json["username"])
-    if not user_orm:
-        return jsonify({"error": "Wrong username or password."}), 401
-    if check_password_hash(user_orm.hashed_password, json["password"]):
-        payload = {
-            "username": json["username"],
-            "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=30),
-        }
-        token = jwt.encode(payload, app.config["SECRET_KEY"])
-        return jsonify({"auth_token": token.decode()})
-    return jsonify({"error": "Wrong username or password."}), 401
+        return eval_and_respond(user_manage, [login_user])
 
 
 @app.route("/users", methods=["GET", "POST"])

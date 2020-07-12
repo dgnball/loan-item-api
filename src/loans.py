@@ -31,41 +31,33 @@ class Loans:
             raise NotAllowedException
         self._storage.remove(entry_id)
 
-    def read(self, entry_id=None, filter=None, username=None):
-        if entry_id:
-            entry = self._storage.get(entry_id)
-            if not entry:
-                raise UnknownLoanItemException
-            if (
-                entry
-                and self._current_user != entry.username
-                and self._current_role != "admin"
-            ):
-                raise NotAllowedException
+    def read_single_entry(self, entry_id):
+        entry = self._storage.get(entry_id)
+        if not entry:
+            raise UnknownLoanItemException
+        if self._current_role != "admin":
+            raise NotAllowedException
+        entry_dict = vars(entry)
+        entry_dict.pop("_sa_instance_state")
+        return entry_dict
+
+    def read(self, request_args):
+        if "limit" in request_args:
+            if "offset" in request_args:
+                entries = self._storage.get_by_limit_and_offset(request_args["limit"], request_args["offset"])
+            else:
+                entries = self._storage.get_by_limit_and_offset(request_args["limit"], 0)
+        elif "offset" in request_args:
+            entries = self._storage.get_by_limit_and_offset(0, request_args["offset"])
+        else:
+            entries = self._storage.get_all()
+        ret_val = []
+        for entry in entries:
             entry_dict = vars(entry)
             entry_dict.pop("_sa_instance_state")
-            return entry_dict
+            ret_val.append(entry_dict)
+        return ret_val
 
-        if username:
-            if self._current_user != username and self._current_role != "admin":
-                raise NotAllowedException
-            if not filter:
-                entries = self._storage.get_by_username(username)
-                ret_val = {}
-                for entry in entries:
-                    entry_dict = vars(entry)
-                    entry_dict.pop("_sa_instance_state")
-                    ret_val[entry.id] = entry_dict
-                return ret_val
-        else:
-            if not filter:
-                entries = self._storage.get_all()
-                ret_val = {}
-                for entry in entries:
-                    entry_dict = vars(entry)
-                    entry_dict.pop("_sa_instance_state")
-                    ret_val[entry.id] = entry_dict
-                return ret_val
 
 
 class _Storage:
@@ -89,3 +81,7 @@ class _Storage:
 
     def get_by_username(self, username):
         return self._db_session.query(LoanItem).filter(LoanItem.loaned_to == username)
+
+    def get_by_limit_and_offset(self, limit, offset):
+        return self._db_session.query(LoanItem).limit(limit).offset(offset)
+
