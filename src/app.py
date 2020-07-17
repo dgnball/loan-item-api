@@ -103,8 +103,17 @@ def read_loan_items(user_manager: Users):
 
 
 def read_loan_item(user_manager: Users, id):
-    Loan_dict = user_manager.Loans.read_single_entry(id)
-    return jsonify({"loan-item": Loan_dict})
+    loan_dict = user_manager.Loans.read_single_entry(id)
+    return jsonify({"loan-item": loan_dict})
+
+
+def update_loan_item(user_manager: Users, id):
+    """Only accepts {"loanedto": <username>}"""
+    if "loanedto" not in request.json:
+        raise InvalidRequestException
+    loan_dict = user_manager.Loans.update_loan(id, request.json["loanedto"])
+    return jsonify({"loan-item": loan_dict})
+
 
 
 def remove_loan_item(user_manager: Users, loan_item_id):
@@ -209,6 +218,9 @@ def loan_item(item_id):
     with UserManagement() as user_manage:
         if request.method == "GET":
             funcs = [check_token_and_set_session, [read_loan_item, item_id]]
+            response = eval_and_respond(user_manage, funcs)
+        elif request.method == "PUT":
+            funcs = [check_token_and_set_session, [update_loan_item, item_id]]
             response = eval_and_respond(user_manage, funcs)
         else:  # DELETE:
             funcs = [check_token_and_set_session, [remove_loan_item, item_id]]

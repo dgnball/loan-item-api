@@ -100,7 +100,7 @@ class TestLoanItemApi(TestCase):
         self.assertEqual(401, code, body.get("error", ""))
         self.assertEqual({"error": "Wrong username or password."}, body)
 
-    def test_pagination(self):
+    def test_pagination_and_filter(self):
         self.post("/loan-items", admin, {"id": "01", "description": "wheelbarrow"})
         self.post("/loan-items", admin, {"id": "02", "description": "drill"})
         self.post("/loan-items", admin, {"id": "03", "description": "digger"})
@@ -137,24 +137,61 @@ class TestLoanItemApi(TestCase):
         ]
         self.assertEqual(expected, body["loan-items"])
 
+        body, _ = self.get("/loan-items?contains=sander", admin)
+        expected = [
+            {"id": "05", "loanedto": None, "description": "floor sander"},
+            {"id": "06", "loanedto": None, "description": "orbital sander"}
+        ]
+        self.assertEqual(expected, body["loan-items"])
+
+    def test_loaning(self):
+        self.post("/loan-items", admin, {"id": "01", "description": "wheelbarrow"})
+        self.post("/loan-items", admin, {"id": "02", "description": "drill"})
+        self.post("/loan-items", admin, {"id": "03", "description": "digger"})
+        self.post("/loan-items", admin, {"id": "04", "description": "carpet cleaner"})
+        self.post("/loan-items", admin, {"id": "05", "description": "floor sander"})
+        self.post("/loan-items", admin, {"id": "06", "description": "orbital sander"})
+        self.post("/loan-items", admin, {"id": "07", "description": "pressure washer"})
+        self.post("/loan-items", admin, {"id": "08", "description": "nail gun"})
+        self.post("/loan-items", admin, {"id": "09", "description": "impact wrench"})
+        self.post("/loan-items", admin, {"id": "10", "description": "air conditioner"})
+        self.post("/loan-items", admin, {"id": "11", "description": "fan"})
+
+        self.put("/loan-items/07", admin, {"loanedto": "bob"})
+        self.put("/loan-items/10", admin, {"loanedto": "bob"})
+        self.put("/loan-items/11", admin, {"loanedto": "bob"})
+
+        body, _ = self.get("/loan-items?loanedto=bob", admin)
+        expected = [
+            {"id": "07", "loanedto": bob, "description": "pressure washer"},
+            {"id": "10", "loanedto": bob, "description": "air conditioner"},
+            {"id": "11", "loanedto": bob, "description": "fan"}
+        ]
+        self.assertEqual(expected, body["loan-items"])
+
+        # Try loaning to a non-existant user
+        body, code = self.put("/loan-items/07", admin, {"loanedto": "steve"})
+        self.assertEqual(404, code)
+        self.assertEqual({"error": "User not found."}, body)
+
+
     def setUp(self) -> None:
         self.bob_token = None
         self.admin_token = None
         self.sally_token = None
 
         #  use admin user to remove all users (apart from admin) and Loans
+        body, code = self.get("/loan-items", admin)
+        self.assertEqual(200, code, body.get("error", ""))
+        for loan_item in body["loan-items"]:
+            body, code = self.delete(f"/loan-items/{loan_item['id']}", admin)
+            self.assertEqual(200, code, body.get("error", ""))
         body, code = self.get("/users", admin)
         self.assertEqual(200, code, body.get("error", ""))
         for user in body["users"]:
             if user != admin:
                 body, code = self.delete(f"/users/{user}", admin)
                 self.assertEqual(200, code, body.get("error", ""))
-        body, code = self.get("/loan-items", admin)
-        self.assertEqual(200, code, body.get("error", ""))
-        for loan_item in body["loan-items"]:
-            body, code = self.delete(f"/loan-items/{loan_item['id']}", admin)
-            self.assertEqual(200, code, body.get("error", ""))
-
         # Confirm Bob no longer exist then re-add him
         body, code = self.get("/users", admin)
         self.assertEqual(200, code, body.get("error", ""))

@@ -29,8 +29,10 @@ if "DATABASE_URL" in os.environ:
     sql_connect = os.environ["DATABASE_URL"]
     sleep(2)  # Give external database time to accept connections
 
+
 # engine = create_engine(sql_connect, echo=True)
 engine = create_engine(sql_connect)
+engine.execute('pragma foreign_keys=ON')
 Base.metadata.create_all(engine)
 Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)

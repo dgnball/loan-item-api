@@ -1,6 +1,6 @@
-from exceptions import NotAllowedException, UnknownLoanItemException
+from exceptions import NotAllowedException, UnknownLoanItemException, UnknownUserException
 from database import LoanItem
-
+from sqlalchemy import exc
 
 class Loans:
     def __init__(self, db_session):
@@ -42,13 +42,15 @@ class Loans:
         return entry_dict
 
     def read(self, request_args):
-        if "limit" in request_args:
+        if "loanedto" in request_args:
+            entries = self._storage.get_by_username(request_args["loanedto"])
+        elif "offset" in request_args:
+            entries = self._storage.get_by_limit_and_offset(None, request_args["offset"])
+        elif "limit" in request_args:
             if "offset" in request_args:
                 entries = self._storage.get_by_limit_and_offset(request_args["limit"], request_args["offset"])
             else:
                 entries = self._storage.get_by_limit_and_offset(request_args["limit"], 0)
-        elif "offset" in request_args:
-            entries = self._storage.get_by_limit_and_offset(None, request_args["offset"])
         else:
             entries = self._storage.get_all()
         ret_val = []
@@ -58,11 +60,30 @@ class Loans:
             ret_val.append(entry_dict)
         return ret_val
 
+    def update_loan(self, id, username):
+        # TODO - check we can un-loan
+        # Do database connection pool
+        if self._current_role != "admin":
+            raise NotAllowedException
+        entry = self._storage.get(id)
+        if not entry:
+            raise UnknownLoanItemException
+        entry.loanedto = username
+        try:
+            self._storage.update()
+        except exc.IntegrityError:
+            raise UnknownUserException
+        entry_dict = vars(entry)
+        entry_dict.pop("_sa_instance_state")
+        return entry_dict
 
 
 class _Storage:
     def __init__(self, db_session):
         self._db_session = db_session
+
+    def update(self):
+        self._db_session.commit()
 
     def remove(self, entry_id):
         self._db_session.query(LoanItem).filter(LoanItem.id == entry_id).delete()
@@ -80,7 +101,7 @@ class _Storage:
         return self._db_session.query(LoanItem)
 
     def get_by_username(self, username):
-        return self._db_session.query(LoanItem).filter(LoanItem.loaned_to == username)
+        return self._db_session.query(LoanItem).filter(LoanItem.loanedto == username)
 
     def get_by_limit_and_offset(self, limit, offset):
         if limit:
