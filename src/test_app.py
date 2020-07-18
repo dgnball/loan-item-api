@@ -137,11 +137,12 @@ class TestLoanItemApi(TestCase):
         ]
         self.assertEqual(expected, body["loan-items"])
 
-        body, _ = self.get("/loan-items?contains=sander", admin)
+        body, code = self.get("/loan-items?contains=sander", admin)
         expected = [
             {"id": "05", "loanedto": None, "description": "floor sander"},
             {"id": "06", "loanedto": None, "description": "orbital sander"}
         ]
+        self.assertEqual(200, code, body.get("error", ""))
         self.assertEqual(expected, body["loan-items"])
 
     def test_loaning(self):

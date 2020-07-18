@@ -44,13 +44,15 @@ class Loans:
     def read(self, request_args):
         if "loanedto" in request_args:
             entries = self._storage.get_by_username(request_args["loanedto"])
-        elif "offset" in request_args:
-            entries = self._storage.get_by_limit_and_offset(None, request_args["offset"])
         elif "limit" in request_args:
             if "offset" in request_args:
                 entries = self._storage.get_by_limit_and_offset(request_args["limit"], request_args["offset"])
             else:
                 entries = self._storage.get_by_limit_and_offset(request_args["limit"], 0)
+        elif "offset" in request_args:
+            entries = self._storage.get_by_limit_and_offset(None, request_args["offset"])
+        elif "contains" in request_args:
+            entries = self._storage.get_by_description(request_args["contains"])
         else:
             entries = self._storage.get_all()
         ret_val = []
@@ -108,3 +110,6 @@ class _Storage:
             return self._db_session.query(LoanItem).limit(limit).offset(offset)
         else:
             return self._db_session.query(LoanItem).offset(offset)
+
+    def get_by_description(self, partial):
+        return self._db_session.query(LoanItem).filter(LoanItem.description.ilike(f"%{partial}%"))
