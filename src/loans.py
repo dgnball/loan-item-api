@@ -42,6 +42,7 @@ class Loans:
         return entry_dict
 
     def read(self, request_args):
+        # TODO - ensure we only get combinations of things that work here
         if "loanedto" in request_args:
             entries = self._storage.get_by_username(request_args["loanedto"])
         elif "limit" in request_args:
@@ -63,8 +64,7 @@ class Loans:
         return ret_val
 
     def update_loan(self, id, username):
-        # TODO - check we can un-loan
-        # Do database connection pool
+        # TODO Do database connection pool
         if self._current_role != "admin":
             raise NotAllowedException
         entry = self._storage.get(id)
