@@ -41,21 +41,9 @@ class Loans:
         entry_dict.pop("_sa_instance_state")
         return entry_dict
 
-    def read(self, request_args):
-        # TODO - ensure we only get combinations of things that work here
-        if "loanedto" in request_args:
-            entries = self._storage.get_by_username(request_args["loanedto"])
-        elif "limit" in request_args:
-            if "offset" in request_args:
-                entries = self._storage.get_by_limit_and_offset(request_args["limit"], request_args["offset"])
-            else:
-                entries = self._storage.get_by_limit_and_offset(request_args["limit"], 0)
-        elif "offset" in request_args:
-            entries = self._storage.get_by_limit_and_offset(None, request_args["offset"])
-        elif "contains" in request_args:
-            entries = self._storage.get_by_description(request_args["contains"])
-        else:
-            entries = self._storage.get_all()
+    def read(self, filter_offset_args):
+        # TODO Do input validation on filter args
+        entries = self._storage.get_filter_offset(**filter_offset_args)
         ret_val = []
         for entry in entries:
             entry_dict = vars(entry)
@@ -99,17 +87,14 @@ class _Storage:
     def get(self, entry_id):
         return self._db_session.query(LoanItem).get(entry_id)
 
-    def get_all(self):
-        return self._db_session.query(LoanItem)
-
-    def get_by_username(self, username):
-        return self._db_session.query(LoanItem).filter(LoanItem.loanedto == username)
-
-    def get_by_limit_and_offset(self, limit, offset):
+    def get_filter_offset(self, loanedto=None, contains=None, limit=None, offset=None):
+        query = self._db_session.query(LoanItem)
+        if loanedto:
+            query = query.filter(LoanItem.loanedto == loanedto)
+        if contains:
+            query = query.filter(LoanItem.description.ilike(f"%{contains}%"))
         if limit:
-            return self._db_session.query(LoanItem).limit(limit).offset(offset)
-        else:
-            return self._db_session.query(LoanItem).offset(offset)
-
-    def get_by_description(self, partial):
-        return self._db_session.query(LoanItem).filter(LoanItem.description.ilike(f"%{partial}%"))
+            query = query.limit(limit)
+        if offset:
+            query = query.offset(offset)
+        return query

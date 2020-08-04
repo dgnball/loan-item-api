@@ -152,7 +152,7 @@ class TestLoanItemApi(TestCase):
         self.assertEqual(200, code, body.get("error", ""))
         self.assertEqual(expected, body["loan-items"])
 
-        body, code = self.get("/loan-items?contains=sander&limit=1&offset=2", admin)
+        body, code = self.get("/loan-items?contains=sander&limit=1&offset=1", admin)
         expected = [
             {"id": "06", "loanedto": None, "description": "orbital sander"}
         ]
@@ -184,7 +184,7 @@ class TestLoanItemApi(TestCase):
         ]
         self.assertEqual(expected, body["loan-items"])
 
-        body, _ = self.get("/loan-items?loanedto=bob&limit=1&offset=2", admin)
+        body, _ = self.get("/loan-items?loanedto=bob&limit=1&offset=1", admin)
         expected = [
             {"id": "10", "loanedto": bob, "description": "air conditioner"}
         ]
@@ -197,13 +197,13 @@ class TestLoanItemApi(TestCase):
         ]
         self.assertEqual(expected, body["loan-items"])
 
-        body, _ = self.get("/loan-items?loanedto=bob&contains=n&limit=1&offset=1", admin)
+        body, _ = self.get("/loan-items?loanedto=bob&contains=n&limit=1", admin)
         expected = [
             {"id": "10", "loanedto": bob, "description": "air conditioner"}
         ]
         self.assertEqual(expected, body["loan-items"])
 
-        body, _ = self.get("/loan-items?loanedto=bob&contains=n&limit=1&offset=2", admin)
+        body, _ = self.get("/loan-items?loanedto=bob&contains=n&limit=1&offset=1", admin)
         expected = [
             {"id": "11", "loanedto": bob, "description": "fan"}
         ]
