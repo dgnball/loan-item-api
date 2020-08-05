@@ -100,6 +100,11 @@ class TestLoanItemApi(TestCase):
         self.assertEqual(401, code, body.get("error", ""))
         self.assertEqual({"error": "Wrong username or password."}, body)
 
+    def test_url_params_input_validation(self):
+        body, code = self.get("/loan-items?limite=5", admin)
+        self.assertEqual(400, code, body.get("error", ""))
+        self.assertEqual({"error": "Invalid request."}, body)
+
     def test_pagination_and_filter(self):
         self.post("/loan-items", admin, {"id": "01", "description": "wheelbarrow"})
         self.post("/loan-items", admin, {"id": "02", "description": "drill"})

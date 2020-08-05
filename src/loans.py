@@ -1,6 +1,7 @@
-from exceptions import NotAllowedException, UnknownLoanItemException, UnknownUserException
+from exceptions import NotAllowedException, UnknownLoanItemException, UnknownUserException, InvalidRequestException
 from database import LoanItem
 from sqlalchemy import exc
+
 
 class Loans:
     def __init__(self, db_session):
@@ -42,7 +43,9 @@ class Loans:
         return entry_dict
 
     def read(self, filter_offset_args):
-        # TODO Do input validation on filter args
+        if filter_offset_args and \
+                not set(filter_offset_args.keys()).intersection({"loanedto", "contains", "limit", "offset"}):
+            raise InvalidRequestException
         entries = self._storage.get_filter_offset(**filter_offset_args)
         ret_val = []
         for entry in entries:
@@ -52,7 +55,6 @@ class Loans:
         return ret_val
 
     def update_loan(self, id, username):
-        # TODO Do database connection pool
         if self._current_role != "admin":
             raise NotAllowedException
         entry = self._storage.get(id)
