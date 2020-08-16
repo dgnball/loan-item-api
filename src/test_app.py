@@ -94,7 +94,10 @@ class TestLoanItemApi(TestCase):
     def test_delete_user(self):
         body, code = self.delete(f"/users/{bob}", bob)
         self.assertEqual(200, code, body.get("error", ""))
-        self.assertEqual({"message": "User successfully deleted."}, body)
+        self.assertEqual({
+            "message": "User successfully deleted.",
+            "user": {"phone": "+441234567890", "role": "regular", "username": "bob"}
+        }, body)
 
         body, code = self.post(f"/login", data=bob_creds)
         self.assertEqual(401, code, body.get("error", ""))
@@ -219,6 +222,25 @@ class TestLoanItemApi(TestCase):
         self.assertEqual(404, code)
         self.assertEqual({"error": "User not found."}, body)
 
+    def test_deleting_loan_items(self):
+        self.post("/loan-items", admin, {"id": "07", "description": "pressure washer"})
+        self.post("/loan-items", admin, {"id": "08", "description": "nail gun"})
+
+        self.put("/loan-items/07", admin, {"loanedto": "bob"})
+
+        body, code = self.delete("/loan-items/07", admin)
+        self.assertEqual(403, code)
+        expected = {"error": "Cannot delete loan item that is loaned."}
+        self.assertEqual(expected, body)
+
+        body, code = self.delete("/loan-items/08", admin)
+        self.assertEqual(200, code)
+        expected = {
+            "loan-item": {"id": "08", "loanedto": None, "description": "nail gun"},
+            "message": "Loan item successfully deleted."
+        }
+        self.assertEqual(expected, body)
+
 
     def setUp(self) -> None:
         self.bob_token = None
@@ -229,6 +251,8 @@ class TestLoanItemApi(TestCase):
         body, code = self.get("/loan-items", admin)
         self.assertEqual(200, code, body.get("error", ""))
         for loan_item in body["loan-items"]:
+            body, code = self.put(f"/loan-items/{loan_item['id']}", admin, {"loanedto": None})
+            self.assertEqual(200, code, body.get("error", ""))
             body, code = self.delete(f"/loan-items/{loan_item['id']}", admin)
             self.assertEqual(200, code, body.get("error", ""))
         body, code = self.get("/users", admin)

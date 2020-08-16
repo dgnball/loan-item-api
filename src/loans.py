@@ -1,4 +1,5 @@
-from exceptions import NotAllowedException, UnknownLoanItemException, UnknownUserException, InvalidRequestException
+from exceptions import NotAllowedException, UnknownLoanItemException, UnknownUserException, InvalidRequestException,\
+    CannotDeleteLoadedItem
 from database import LoanItem
 from sqlalchemy import exc
 
@@ -20,9 +21,9 @@ class Loans:
             raise NotAllowedException
 
         loan_item = LoanItem(id=item_id, description=description)
-        cal_dict = self._storage.create(loan_item).__dict__.copy()
-        cal_dict.pop("_sa_instance_state")
-        return cal_dict
+        loan_dict = self._storage.create(loan_item).__dict__.copy()
+        loan_dict.pop("_sa_instance_state")
+        return loan_dict
 
     def remove(self, entry_id):
         entry = self._storage.get(entry_id)
@@ -30,7 +31,9 @@ class Loans:
             raise UnknownLoanItemException
         if self._current_role != "admin":
             raise NotAllowedException
-        self._storage.remove(entry_id)
+        loan_dict = self._storage.remove(entry_id).__dict__.copy()
+        loan_dict.pop("_sa_instance_state")
+        return loan_dict
 
     def read_single_entry(self, entry_id):
         entry = self._storage.get(entry_id)
@@ -78,8 +81,12 @@ class _Storage:
         self._db_session.commit()
 
     def remove(self, entry_id):
+        entry = self._db_session.query(LoanItem).get(entry_id)
+        if entry.loanedto is not None:
+            raise CannotDeleteLoadedItem
         self._db_session.query(LoanItem).filter(LoanItem.id == entry_id).delete()
         self._db_session.commit()
+        return entry
 
     def create(self, cal_obj):
         self._db_session.add(cal_obj)

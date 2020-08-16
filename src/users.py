@@ -83,8 +83,12 @@ class Users:
     def remove(self, user_to_delete):
         if user_to_delete == initial_admin:
             raise InitialAdminRoleException
+        user_dict = vars(self._storage.get(user_to_delete))
+        user_dict.pop("_sa_instance_state")
+        user_dict.pop("hashed_password")
         self._modify_read_user_check(user_to_delete)
         self._storage.remove(user_to_delete)
+        return user_dict
 
     def update_password(self, user_to_change, hashed_password):
         self._modify_read_user_check(user_to_change)

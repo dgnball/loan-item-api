@@ -1,6 +1,10 @@
 class NotAllowedException(Exception):
     pass
 
+class CannotDeleteLoadedItem(Exception):
+    pass
+
+
 
 class UnknownUserException(Exception):
     pass

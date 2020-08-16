@@ -16,6 +16,7 @@ from exceptions import (
     UnknownUserException,
     InitialAdminRoleException,
     UserAlreadyExistsException,
+    CannotDeleteLoadedItem
 )
 from users import Users, UserManagement
 
@@ -65,8 +66,8 @@ def read_user(user_manage: Users, username):
 
 
 def remove_user(user_manage: Users, username):
-    user_manage.remove(username)
-    return jsonify({"message": "User successfully deleted."})
+    user_dict = user_manage.remove(username)
+    return jsonify({"message": "User successfully deleted.", "user": user_dict})
 
 
 def update_user(user_manage: Users, username):
@@ -115,10 +116,9 @@ def update_loan_item(user_manager: Users, id):
     return jsonify({"loan-item": loan_dict})
 
 
-
 def remove_loan_item(user_manager: Users, loan_item_id):
-    user_manager.Loans.remove(loan_item_id)
-    return jsonify({"message": "Loan successfully deleted."})
+    loan_item_dict = user_manager.Loans.remove(loan_item_id)
+    return jsonify({"message": "Loan item successfully deleted.", "loan-item": loan_item_dict})
 
 
 def login_user(user_manager):
@@ -156,6 +156,8 @@ def eval_and_respond(user_manage, funcs):
         return jsonify({"error": "User not found."}), 404
     except InitialAdminRoleException:
         return jsonify({"error": "Can't change admin username or role."}), 400
+    except CannotDeleteLoadedItem:
+        return jsonify({"error": "Cannot delete loan item that is loaned."}), 403
     except Exception as e:
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500

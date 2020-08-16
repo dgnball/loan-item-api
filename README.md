@@ -56,7 +56,6 @@ changed by the "MODE" environment variable.
 | Get all loan items where loan-item description contains "drills" | GET  |  /loan-items?contains=drills |   | "access-token": token  | 
 | Get all loan items loaned to Bob where loan-item description contains "boots" | GET  |  /loan-items?loanedto=bob&contains=boots |   | "access-token": token  | 
 | Delete loan item with id 123e4567-e89b-12d3-a456-426614174000  | DELETE  |  /loan-items/123e4567-e89b-12d3-a456-426614174000  |   | "access-token": token  | 
-| Delete all loan items where description contains "drills" | DELETE  |  /loan-items?contains=drills  |   | "access-token": token  | 
 
 ### Expected return values
 
