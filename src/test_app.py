@@ -241,6 +241,24 @@ class TestLoanItemApi(TestCase):
         }
         self.assertEqual(expected, body)
 
+    def test_change_mode(self):
+        body, code = self.put("/mode", admin, {"mode": "self-service"})
+        self.assertEqual(200, code)
+        self.assertEqual({"mode": "self-service"}, body)
+
+        body, code = self.get("/mode", admin)
+        self.assertEqual(200, code)
+        self.assertEqual({"mode": "self-service"}, body)
+
+        self.post("/loan-items", admin, {"id": "11", "description": "fan"})
+        body, code = self.put("/loan-items/11", bob, {"loanedto": "bob"})
+        self.assertEqual(200, code)
+
+        body, code = self.put("/loan-items/11", admin, {"loanedto": "admin"})
+        self.assertEqual(200, code)
+
+        body, code = self.put("/loan-items/11", bob, {"loanedto": "bob"})
+        self.assertEqual(403, code)
 
     def setUp(self) -> None:
         self.bob_token = None

@@ -65,6 +65,9 @@ class Users:
         return user
 
     # Functions used during a user session
+    def get_current_role(self):
+        return self._current_role
+
     def read(self, username=None):
         self._modify_read_user_check(username)
         if username:

@@ -24,6 +24,7 @@ app = Flask(__name__)
 app.config["SECRET_KEY"] = (
     os.environ["SECRET_KEY"] if "SECRET_KEY" in os.environ else "bad_secret"
 )
+mode = "admin-operated"
 
 
 def check_token_and_set_session(user_manage):
@@ -136,6 +137,28 @@ def login_user(user_manager):
     return jsonify({"error": "Wrong username or password."}), 401
 
 
+def get_mode(user_manager: Users):
+    role = user_manager.get_current_role()
+    if role == "admin":
+        return jsonify({"mode": mode})
+    else:
+        raise NotAllowedException
+
+
+def change_mode(user_manager: Users):
+    global mode
+    role = user_manager.get_current_role()
+    if role == "admin":
+        request_data = request.get_json()
+        if "mode" in request_data and request_data["mode"] in ["self-service", "admin-operated"]:
+            mode = request_data["mode"]
+            return jsonify({"mode": mode})
+        else:
+            raise InvalidRequestException
+    else:
+        raise NotAllowedException
+
+
 def eval_and_respond(user_manage, funcs):
     ret_val = {}
     try:
@@ -226,6 +249,18 @@ def loan_item(item_id):
             response = eval_and_respond(user_manage, funcs)
         else:  # DELETE:
             funcs = [check_token_and_set_session, [remove_loan_item, item_id]]
+            response = eval_and_respond(user_manage, funcs)
+    return response
+
+
+@app.route("/mode", methods=["GET", "PUT"])
+def mode():
+    with UserManagement() as user_manage:
+        if request.method == "GET":
+            funcs = [check_token_and_set_session, get_mode]
+            response = eval_and_respond(user_manage, funcs)
+        else:   # PUT
+            funcs = [check_token_and_set_session, change_mode]
             response = eval_and_respond(user_manage, funcs)
     return response
 

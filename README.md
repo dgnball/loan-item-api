@@ -56,6 +56,9 @@ changed by the "MODE" environment variable.
 | Get all loan items where loan-item description contains "drills" | GET  |  /loan-items?contains=drills |   | "access-token": token  | 
 | Get all loan items loaned to Bob where loan-item description contains "boots" | GET  |  /loan-items?loanedto=bob&contains=boots |   | "access-token": token  | 
 | Delete loan item with id 123e4567-e89b-12d3-a456-426614174000  | DELETE  |  /loan-items/123e4567-e89b-12d3-a456-426614174000  |   | "access-token": token  | 
+| Change mode to self-service  | PUT  |  /mode  | ```{"mode": "self-service"}```  | "access-token": token  | 
+| Change mode to admin-operated  | PUT  |  /mode |  ```{"mode": "admin-operated "}```  | "access-token": token  | 
+| Get mode  | GET  |  /mode |   | "access-token": token  | 
 
 ### Expected return values
 
@@ -70,6 +73,7 @@ Apart from unexpected 500 errors, all requests will return a json object with on
 |loan-items| Returned by all calls to /loan-item (including those with query parameters). Value is a list of loan-item objects. | ```{"loan-items": [{"id": "123e4567-e89b-12d3-a456-426614174000", "description": "wheelbarrow","loanedto": "bob"},{"id": "123e4567-e89b-12d3-a456-426614174001", "description": "drill","loanedto": "sally"}]}``` |
 |user| Returned by all calls to /user/:username, apart from when a password is changed. Value is a single user object.|```{'user': {'phone': 800, 'role': 1, 'username': 'bob'}}``` |
 |users| Returned by all calls to /users. Value is a list of user objects. | ```{'users': [{'phone': "+441234567890", 'role': 3, 'username': 'admin'}, {'phone': "+441234567890", 'role': 1, 'username': 'bob'}]}```|
+|mode| Returned by all calls to /mode. Value is either self-service or admin-operated. |```{"mode": "self-service"}```|
 
 
 ## Installation

@@ -2,6 +2,7 @@ from exceptions import NotAllowedException, UnknownLoanItemException, UnknownUse
     CannotDeleteLoadedItem
 from database import LoanItem
 from sqlalchemy import exc
+import app
 
 
 class Loans:
@@ -58,12 +59,15 @@ class Loans:
         return ret_val
 
     def update_loan(self, id, username):
-        if self._current_role != "admin":
+        if app.mode == "admin-operated" and self._current_role != "admin":
             raise NotAllowedException
         entry = self._storage.get(id)
         if not entry:
             raise UnknownLoanItemException
-        entry.loanedto = username
+        if entry.loanedto is not None and self._current_role != "admin":
+            raise NotAllowedException
+        else:
+            entry.loanedto = username
         try:
             self._storage.update()
         except exc.IntegrityError:
